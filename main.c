@@ -7,7 +7,6 @@
 #define NULL ((void *)0)
 
 
-
 int main()
 {
     // Задаем основные константы
@@ -49,19 +48,29 @@ int main()
     int array_size_j = 320;
     int ii = 0;
     int read = 0;
+    double D_fn_ref_Vr = 0;
 
     fftw_complex* data = NULL;
     data = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
+
     double* bytes = NULL;
     bytes = (double*)malloc((array_size_i * array_size_j) * 2 * sizeof(double));
+
     double *ta = NULL;
     ta = (double*)malloc(array_size_i * array_size_j * sizeof (double));
+
+    double *fa = NULL;
+    fa = (double*)malloc(array_size_i * sizeof (double));
+
     fftw_complex* out = NULL;
     out = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
 
+    double *D_fn_Vr_mtx = NULL;
+    D_fn_Vr_mtx = (double*)malloc(array_size_i * array_size_j * sizeof(double));
+
     FILE* fp;
     fopen_s(&fp, "D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for MinGW
-//    fopen("D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for Cygwin
+    //fopen("D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for Cygwin
     if (!fp)
     {
         (void)printf("Unable to open file!");
@@ -71,7 +80,6 @@ int main()
     read = fread(bytes, 8, array_size_i * array_size_j * 2, fp);
     printf("Readed %d complex numbers\n", read / 2);
     fclose(fp);
-
 
     // s_echo
     for (i = 0; i < array_size_i; ++i)
@@ -84,6 +92,7 @@ int main()
             //printf("% .10f + %.10fi\n", creal(data[ii]), cimag(data[ii]));
         }
     }
+
     // ta
     for (j = -Nrg / 2; j < (Nrg / 2) - 1; ++j)
     {
@@ -95,6 +104,26 @@ int main()
 
         }
     }
+
+    // fa
+    for (j = 0; j < NFFT_a / 2; ++j)
+    {
+        fa[j] = j;
+        //printf("%.4f  ", fa[j]);
+    }
+    i = (fa[(NFFT_a / 2) - 1] + 1) * -1;
+    for (j = NFFT_a / 2; j < NFFT_a; ++j)
+    {
+        fa[j] = i;
+        i++;
+        //printf("%.4f  ", fa[j]);
+    }
+    for (j = 0; j < NFFT_a; ++j)
+    {
+        fa[j] = fnc + fa[j] * (Fa / NFFT_a);
+        //printf("%.4f  ", fa[j]);
+    }
+
     // s_rd
     for (i = 0; i < array_size_i; ++i) {
         for (j = 0; j < array_size_j; ++j) {
@@ -103,18 +132,9 @@ int main()
         }
     }
 
-
-/*
-    fftw_plan p;
-    p = fftw_plan_dft_1d(1024*320, data, out, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_execute(p);
-    fftw_destroy_plan(p);
-*/
-
-
-
-    int rank = 1; /* not 2: we are computing 1d transforms */
-    int n[] = {1024}; /* 1d transforms of length 10 */
+    // S_RD
+    int rank = 1; /*  we are computing 1d transforms */
+    int n[] = {1024}; /* 1d transforms of length 1024 */
     int howmany = 320;
     int idist = 1024;
     int odist = 1024;
@@ -122,24 +142,20 @@ int main()
     int ostride = 1; /* distance between two elements in
                                   the same column */
     int *inembed = n, *onembed = n;
-    fftw_plan p = fftw_plan_many_dft(rank, n,  howmany,
-                                  data,  inembed,
-                                  istride,  idist,
-                                  out,  onembed,
-                                  ostride,  odist,
-                                  FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_plan p = fftw_plan_many_dft(rank, n,  howmany, data, inembed, istride, idist,
+                                  out,  onembed, ostride,  odist, FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_execute(p);
 
+    // D_fn_Vr_mtx
     for (i = 0; i < array_size_i; ++i)
     {
         for (j = 0; j < array_size_j; ++j)
         {
-            ii = array_size_i * j + i;
-            //printf("i = %d  j = %d  ", i, j);
-            //printf("% .10f + %.10fi\n", creal(out[ii]), cimag(out[ii]));
+           D_fn_Vr_mtx[array_size_i * j + i] = sqrt(1 - (lamda * lamda * fa[i] * fa[i] / (4 * Vr * Vr)));
+           //printf("j = %d i = %d %.4f \n", j, i, D_fn_Vr[array_size_i * j + i]);
         }
     }
-
+    D_fn_ref_Vr = sqrt(1 - lamda * lamda * fn_ref * fn_ref / (4 * Vr * Vr));
 
 
 
@@ -162,6 +178,8 @@ int main()
             ii = array_size_i * j + i;
             fprintf(fp_2, "i = %d  j = %d  ", i, j);
             fprintf(fp_2, "% .10f + %.10fi\n", creal(out[ii]), cimag(out[ii]));
+
+            //fprintf(fp_2, "i = %d j = %d %.4f \n", i, j, D_fn_Vr[ii]);
         }
     }
     return 0;
