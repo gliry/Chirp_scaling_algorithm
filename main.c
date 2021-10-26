@@ -65,8 +65,14 @@ int main()
     fftw_complex* out = NULL;
     out = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
 
+    double *D_fn_Vr = NULL;
+    D_fn_Vr = (double*)malloc(array_size_i * sizeof(double));
+
     double *D_fn_Vr_mtx = NULL;
     D_fn_Vr_mtx = (double*)malloc(array_size_i * array_size_j * sizeof(double));
+
+    double *K_src = NULL;
+    K_src = (double*)malloc(array_size_i * sizeof (double));
 
     FILE* fp;
     fopen_s(&fp, "D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for MinGW
@@ -146,6 +152,13 @@ int main()
                                   out,  onembed, ostride,  odist, FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_execute(p);
 
+    // D_fn_Vr
+    for (i = 0; i < array_size_i; ++i)
+    {
+       D_fn_Vr[i] = sqrt(1 - (lamda * lamda * fa[i] * fa[i] / (4 * Vr * Vr)));
+       //printf("j = %d i = %d %.4f \n", j, i, D_fn_Vr[array_size_i * j + i]);
+    }
+
     // D_fn_Vr_mtx
     for (i = 0; i < array_size_i; ++i)
     {
@@ -158,6 +171,12 @@ int main()
     D_fn_ref_Vr = sqrt(1 - lamda * lamda * fn_ref * fn_ref / (4 * Vr * Vr));
 
 
+    for (i = 0; i <array_size_i; ++i)
+    {
+        K_src[i] = (2 * Vr * Vr * f0 * f0 * f0 * D_fn_Vr[i] * D_fn_Vr[i] * D_fn_Vr[i])
+                / (c * R_ref * fa[i] * fa[i]);
+        printf("K_src[%d] =  %.4f \n", i, K_src[i]);
+    }
 
 
 
