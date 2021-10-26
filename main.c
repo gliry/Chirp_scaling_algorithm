@@ -74,6 +74,12 @@ int main()
     double *K_src = NULL;
     K_src = (double*)malloc(array_size_i * sizeof (double));
 
+    double *K_src_mtx = NULL;
+    K_src_mtx = (double*)malloc(array_size_i * array_size_j * sizeof (double));
+
+    double *Km = NULL;
+    Km = (double*)malloc(array_size_i * array_size_j * sizeof (double));
+
     FILE* fp;
     fopen_s(&fp, "D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for MinGW
     //fopen("D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for Cygwin
@@ -170,19 +176,31 @@ int main()
     }
     D_fn_ref_Vr = sqrt(1 - lamda * lamda * fn_ref * fn_ref / (4 * Vr * Vr));
 
-
+    // K_src
     for (i = 0; i <array_size_i; ++i)
     {
         K_src[i] = (2 * Vr * Vr * f0 * f0 * f0 * D_fn_Vr[i] * D_fn_Vr[i] * D_fn_Vr[i])
                 / (c * R_ref * fa[i] * fa[i]);
-        printf("K_src[%d] =  %.4f \n", i, K_src[i]);
     }
 
+    //K_src_mtx
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            K_src_mtx[array_size_i * j + i] = (2 * Vr * Vr * f0 * f0 * f0 * D_fn_Vr[i] * D_fn_Vr[i] * D_fn_Vr[i])
+                    / (c * R_ref * fa[i] * fa[i]);
+            //printf("i = %d j = %d %.4f \n", i, j, K_src_mtx[array_size_i * j + i]);
+        }
+    }
 
-
-
-
-
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            Km[array_size_i * j + i] = Kr / (1 - Kr / (K_src_mtx[array_size_i * j + i]));
+        }
+    }
 
 
 
@@ -195,10 +213,10 @@ int main()
         for (j = 0; j < array_size_j; ++j)
         {
             ii = array_size_i * j + i;
-            fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            fprintf(fp_2, "% .10f + %.10fi\n", creal(out[ii]), cimag(out[ii]));
+            //fprintf(fp_2, "i = %d  j = %d  ", i, j);
+            //fprintf(fp_2, "% .10f + %.10fi\n", creal(out[ii]), cimag(out[ii]));
 
-            //fprintf(fp_2, "i = %d j = %d %.4f \n", i, j, D_fn_Vr[ii]);
+            fprintf(fp_2, "i = %d j = %d %.4f \n", i, j, Km[ii]);
         }
     }
     return 0;
