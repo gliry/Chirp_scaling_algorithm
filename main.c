@@ -65,6 +65,9 @@ int main()
     fftw_complex* out = NULL;
     out = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
 
+    fftw_complex* S_RD = NULL;
+    S_RD = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
+
     double *D_fn_Vr = NULL;
     D_fn_Vr = (double*)malloc(array_size_i * sizeof(double));
 
@@ -164,7 +167,7 @@ int main()
                                   the same column */
     int *inembed = n, *onembed = n;
     fftw_plan p = fftw_plan_many_dft(rank, n,  howmany, data, inembed, istride, idist,
-                                  out,  onembed, ostride,  odist, FFTW_FORWARD, FFTW_ESTIMATE);
+                                  S_RD,  onembed, ostride,  odist, FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_execute(p);
 
     // D_fn_Vr
@@ -225,7 +228,6 @@ int main()
         }
     }
 
-
     // s_sc
     for (i = 0; i < array_size_i; ++i)
     {
@@ -238,6 +240,14 @@ int main()
         }
     }
 
+    //S_RD_1
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            S_RD[array_size_i * j + i] = S_RD[array_size_i * j + i] * s_sc[array_size_i * j + i];
+        }
+    }
 
 
 
@@ -250,7 +260,7 @@ int main()
         {
             ii = array_size_i * j + i;
             fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            fprintf(fp_2, "% .20f + %.20fi\n", creal(s_sc[ii]), cimag(s_sc[ii]));
+            fprintf(fp_2, "% .20f + %.20fi\n", creal(S_RD[ii]), cimag(S_RD[ii]));
 
             //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, s_sc[ii]);
         }
