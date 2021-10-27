@@ -92,6 +92,9 @@ int main()
     double * tr_mtx = NULL;
     tr_mtx = (double*)malloc(array_size_i * array_size_j * sizeof (double));
 
+    fftw_complex * s_2df_1 = NULL;
+    s_2df_1 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+
     FILE* fp;
     fopen_s(&fp, "D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for MinGW
     //fopen("D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for Cygwin
@@ -245,9 +248,33 @@ int main()
     {
         for (j = 0; j < array_size_j; ++j)
         {
-            S_RD[array_size_i * j + i] = S_RD[array_size_i * j + i] * s_sc[array_size_i * j + i];
+            S_RD[array_size_j * i + j] = S_RD[array_size_i * j + i] * s_sc[array_size_i * j + i];
         }
     }
+
+    // s_2df_1
+    int rank_2 = 1; /*  we are computing 1d transforms */
+    int n_2[] = {320}; /* 1d transforms of length ... */
+    int howmany_2 = 1024;
+    int idist_2 = 320;
+    int odist_2 = 320;
+    int istride_2 = 1;
+    int ostride_2 = 1; /* distance between two elements in
+                                  the same column */
+    int *inembed_2 = n_2, *onembed_2 = n_2;
+    fftw_plan p_2 = fftw_plan_many_dft(rank_2, n_2,  howmany_2, S_RD, inembed_2, istride_2, idist_2,
+                                  out,  onembed_2, ostride_2,  odist_2, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_execute(p_2);
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            s_2df_1[array_size_i * j + i] = out[array_size_j * i + j];
+        }
+    }
+
+
+
 
 
 
@@ -260,7 +287,7 @@ int main()
         {
             ii = array_size_i * j + i;
             fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            fprintf(fp_2, "% .20f + %.20fi\n", creal(S_RD[ii]), cimag(S_RD[ii]));
+            fprintf(fp_2, "% .20f + %.20fi\n", creal(s_2df_1[ii]), cimag(s_2df_1[ii]));
 
             //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, s_sc[ii]);
         }
