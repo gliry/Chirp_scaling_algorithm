@@ -141,6 +141,12 @@ int main()
     double *W_ref = NULL;
     W_ref = (double*)malloc(array_size_i * array_size_j * sizeof (double));
 
+    fftw_complex * H1_new = NULL;
+    H1_new = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+
+    fftw_complex * s_2df_2 = NULL;
+    s_2df_2 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+
 
 
 
@@ -350,9 +356,35 @@ int main()
         for (j = 0; j < array_size_j; ++j)
         {
             W_ref[array_size_i * j + i] = kaiser[j];
-            //printf("j = %d   %.10f\n", j, kaiser[j]);
         }
     }
+
+    // fftshift (H1,2)  swaps halves of each row
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j / 2; ++j)
+        {
+            H1_new[array_size_i * j + i] = H1[array_size_i * (j + 160) + i];
+        }
+    }
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = array_size_j / 2; j < array_size_j; ++j)
+        {
+            H1_new[array_size_i * j + i] = H1[array_size_i * (j - 160) + i];
+        }
+    }
+
+
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            ii = array_size_i * j + i;
+            s_2df_2[ii] = s_2df_1[ii] * H1_new[ii];
+        }
+    }
+
 
 
     FILE* fp_2;
@@ -362,10 +394,10 @@ int main()
         for (j = 0; j < array_size_j; ++j)
         {
             ii = array_size_i * j + i;
-            //fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            //fprintf(fp_2, "% .20f + %.20fi\n", creal(H1[ii]), cimag(H1[ii]));
+            fprintf(fp_2, "i = %d  j = %d  ", i, j);
+            fprintf(fp_2, "% .20f + %.20fi\n", creal(s_2df_2[ii]), cimag(s_2df_2[ii]));
 
-            fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, W_ref[ii]);
+            //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, W_ref[ii]);
         }
     }
     return 0;
