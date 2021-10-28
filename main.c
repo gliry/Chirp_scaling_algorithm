@@ -150,6 +150,8 @@ int main()
     fftw_complex * S_RD_2 = NULL;
     S_RD_2 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
+    double *R0_RCMC = NULL;
+    R0_RCMC = (double*)malloc(array_size_j * sizeof (double));
 
 
 
@@ -401,7 +403,6 @@ int main()
     fftw_plan p_3 = fftw_plan_many_dft(rank_3, n_3,  howmany_3, s_2df_2, inembed_3, istride_3, idist_3,
                                   out,  onembed_3, ostride_3,  odist_3, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_execute(p_3);
-
     for (i = 0; i < array_size_i; ++i)
     {
         for (j = 0; j < array_size_j; ++j)
@@ -409,6 +410,13 @@ int main()
             S_RD_2[array_size_i * j + i] = out[array_size_j * i + j];
         }
     }
+
+    for (j = 0; j < array_size_j; ++j)
+    {
+        R0_RCMC[j] = (c / 2) * tr[j];
+    }
+
+
 
 
 
@@ -419,10 +427,10 @@ int main()
         for (j = 0; j < array_size_j; ++j)
         {
             ii = array_size_i * j + i;
-            fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            fprintf(fp_2, "% .20f + %.20fi\n", creal(S_RD_2[ii]) / 320, cimag(S_RD_2[ii]) / 320);
+            //fprintf(fp_2, "i = %d  j = %d  ", i, j);
+            //fprintf(fp_2, "% .20f + %.20fi\n", creal(S_RD_2[ii]) / 320, cimag(S_RD_2[ii]) / 320);
 
-            //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, W_ref[ii]);
+            fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, R0_RCMC[j]);
         }
     }
     return 0;
