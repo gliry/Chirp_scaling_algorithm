@@ -6,6 +6,40 @@
 
 #define NULL ((void *)0)
 
+double zeroethOrderBessel( double x )
+{
+    const double eps = 0.000001;
+    //  initialize the series term for m=0 and the result
+    double besselValue = 0;
+    double term = 1;
+    double m = 0;
+    //  accumulate terms as long as they are significant
+    while(term  > eps * besselValue)
+    {
+        besselValue += term;
+
+        //  update the term
+        ++m;
+        term *= (x*x) / (4*m*m);
+    }
+    return besselValue;
+}
+
+void buildWindow( int length, double shape, double* kaiser)
+{
+    //  Pre-compute the shared denominator in the Kaiser equation.
+    const double oneOverDenom = 1.0 / zeroethOrderBessel( shape );
+
+    const int N = length;
+    const double oneOverN = 1.0 / N;
+
+    for (int n = 0; n < N; ++n )
+    {
+        const double K = (2.0 * n * oneOverN) - 1.0;
+        const double arg = sqrt(1.0 - (K * K));
+        kaiser[n] = zeroethOrderBessel(shape * arg) * oneOverDenom;
+    }
+}
 
 int main()
 {
@@ -94,6 +128,21 @@ int main()
 
     fftw_complex * s_2df_1 = NULL;
     s_2df_1 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+
+    fftw_complex * H1 = NULL;
+    H1 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+
+    double * fr_mtx = NULL;
+    fr_mtx = (double*)malloc(array_size_i * array_size_j * sizeof (double));
+
+    double *kaiser = NULL;
+    kaiser = (double*)malloc(array_size_j * sizeof (double));
+
+    double *W_ref = NULL;
+    W_ref = (double*)malloc(array_size_i * array_size_j * sizeof (double));
+
+
+
 
     FILE* fp;
     fopen_s(&fp, "D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for MinGW
@@ -273,10 +322,37 @@ int main()
         }
     }
 
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            fr_mtx[array_size_i * j + i] = (j - NFFT_r / 2) * (Fr / NFFT_r);
+        }
+    }
 
+    //
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            ii = array_size_i * j + i;
+            H1[ii] = cexp(I * M_PI * D_fn_Vr_mtx[ii] / (D_fn_ref_Vr * Km[ii]) * fr_mtx[ii] * fr_mtx[ii]) *
+            cexp(I * M_PI * 4 / c * (1 / D_fn_Vr_mtx[ii] - 1 / D_fn_ref_Vr) * R_ref * fr_mtx[ii]);
+        }
+    }
 
+    // (kaiser(Nrg,3).')
+    buildWindow(Nrg, 3, kaiser);
 
-
+    // W_ref
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            W_ref[array_size_i * j + i] = kaiser[j];
+            //printf("j = %d   %.10f\n", j, kaiser[j]);
+        }
+    }
 
 
     FILE* fp_2;
@@ -286,12 +362,17 @@ int main()
         for (j = 0; j < array_size_j; ++j)
         {
             ii = array_size_i * j + i;
-            fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            fprintf(fp_2, "% .20f + %.20fi\n", creal(s_2df_1[ii]), cimag(s_2df_1[ii]));
+            //fprintf(fp_2, "i = %d  j = %d  ", i, j);
+            //fprintf(fp_2, "% .20f + %.20fi\n", creal(H1[ii]), cimag(H1[ii]));
 
-            //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, s_sc[ii]);
+            fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, W_ref[ii]);
         }
     }
     return 0;
 
 }
+
+
+
+
+
