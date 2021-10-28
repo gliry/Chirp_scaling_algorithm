@@ -153,6 +153,9 @@ int main()
     double *R0_RCMC = NULL;
     R0_RCMC = (double*)malloc(array_size_j * sizeof (double));
 
+    fftw_complex * Haz = NULL;
+    Haz = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+
 
 
     FILE* fp;
@@ -407,17 +410,25 @@ int main()
     {
         for (j = 0; j < array_size_j; ++j)
         {
-            S_RD_2[array_size_i * j + i] = out[array_size_j * i + j];
+            S_RD_2[array_size_i * j + i] = out[array_size_j * i + j] / array_size_j;
         }
     }
 
+    // R0_RCMC
     for (j = 0; j < array_size_j; ++j)
     {
         R0_RCMC[j] = (c / 2) * tr[j];
     }
 
 
-
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            ii = array_size_i * j + i;
+            Haz[ii] = cexp(I * 4 * M_PI * D_fn_Vr[i] * R0_RCMC[j] * f0 / c);
+        }
+    }
 
 
     FILE* fp_2;
@@ -427,10 +438,10 @@ int main()
         for (j = 0; j < array_size_j; ++j)
         {
             ii = array_size_i * j + i;
-            //fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            //fprintf(fp_2, "% .20f + %.20fi\n", creal(S_RD_2[ii]) / 320, cimag(S_RD_2[ii]) / 320);
+            fprintf(fp_2, "i = %d  j = %d  ", i, j);
+            fprintf(fp_2, "% .20f + %.20fi\n", creal(Haz[ii]), cimag(Haz[ii]));
 
-            fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, R0_RCMC[j]);
+            //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, R0_RCMC[j]);
         }
     }
     return 0;
