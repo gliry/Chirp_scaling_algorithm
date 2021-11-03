@@ -85,7 +85,7 @@ int main()
     double D_fn_ref_Vr = 0;
 
     fftw_complex* data = NULL;
-    data = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
+    data = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof(fftw_complex));
 
     double* bytes = NULL;
     bytes = (double*)malloc((array_size_i * array_size_j) * 2 * sizeof(double));
@@ -97,10 +97,13 @@ int main()
     fa = (double*)malloc(array_size_i * sizeof (double));
 
     fftw_complex* out = NULL;
-    out = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
+    out = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof(fftw_complex));
+
+    fftw_complex* out_2 = NULL;
+    out_2 = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof(fftw_complex));
 
     fftw_complex* S_RD = NULL;
-    S_RD = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof(fftw_complex));
+    S_RD = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof(fftw_complex));
 
     double *D_fn_Vr = NULL;
     D_fn_Vr = (double*)malloc(array_size_i * sizeof(double));
@@ -118,7 +121,7 @@ int main()
     Km = (double*)malloc(array_size_i * array_size_j * sizeof (double));
 
     fftw_complex * s_sc = NULL;
-    s_sc = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    s_sc = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     double * tr = NULL;
     tr = (double*)malloc(array_size_j * sizeof (double));
@@ -127,10 +130,10 @@ int main()
     tr_mtx = (double*)malloc(array_size_i * array_size_j * sizeof (double));
 
     fftw_complex * s_2df_1 = NULL;
-    s_2df_1 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    s_2df_1 = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     fftw_complex * H1 = NULL;
-    H1 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    H1 = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     double * fr_mtx = NULL;
     fr_mtx = (double*)malloc(array_size_i * array_size_j * sizeof (double));
@@ -142,25 +145,28 @@ int main()
     W_ref = (double*)malloc(array_size_i * array_size_j * sizeof (double));
 
     fftw_complex * H1_new = NULL;
-    H1_new = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    H1_new = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     fftw_complex * s_2df_2 = NULL;
-    s_2df_2 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    s_2df_2 = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     fftw_complex * S_RD_2 = NULL;
-    S_RD_2 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    S_RD_2 = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     double *R0_RCMC = NULL;
     R0_RCMC = (double*)malloc(array_size_j * sizeof (double));
 
     fftw_complex * Haz = NULL;
-    Haz = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    Haz = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     fftw_complex * H2 = NULL;
-    H2 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    H2 = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
     fftw_complex * S_RD_3 = NULL;
-    S_RD_3 = (fftw_complex*)malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+    S_RD_3 = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
+
+    fftw_complex * s_image = NULL;
+    s_image = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof (fftw_complex));
 
 
 
@@ -227,6 +233,8 @@ int main()
                                                                           * ta[array_size_j * i + j]);
         }
     }
+
+
 
     // S_RD
     int rank = 1; /*  we are computing 1d transforms */
@@ -317,7 +325,7 @@ int main()
     {
         for (j = 0; j < array_size_j; ++j)
         {
-            S_RD[array_size_j * i + j] = S_RD[array_size_i * j + i] * s_sc[array_size_i * j + i];
+            S_RD[array_size_i * j + i] = S_RD[array_size_i * j + i] * s_sc[array_size_i * j + i];
         }
     }
 
@@ -325,20 +333,21 @@ int main()
     int rank_2 = 1; /*  we are computing 1d transforms */
     int n_2[] = {array_size_j}; /* 1d transforms of length ... */
     int howmany_2 = array_size_i;
-    int idist_2 = array_size_j;
-    int odist_2 = array_size_j;
-    int istride_2 = 1;
-    int ostride_2 = 1; /* distance between two elements in
+    int idist_2 = 1;
+    int odist_2 = 1;
+    int istride_2 = array_size_i;
+    int ostride_2 = array_size_i; /* distance between two elements in
                                   the same column */
     int *inembed_2 = n_2, *onembed_2 = n_2;
     fftw_plan p_2 = fftw_plan_many_dft(rank_2, n_2,  howmany_2, S_RD, inembed_2, istride_2, idist_2,
                                   out,  onembed_2, ostride_2,  odist_2, FFTW_FORWARD, FFTW_ESTIMATE);
+
     fftw_execute(p_2);
     for (i = 0; i < array_size_i; ++i)
     {
         for (j = 0; j < array_size_j; ++j)
         {
-            s_2df_1[array_size_i * j + i] = out[array_size_j * i + j];
+            s_2df_1[array_size_i * j + i] = out[array_size_i * j + i];
         }
     }
 
@@ -395,7 +404,7 @@ int main()
         for (j = 0; j < array_size_j; ++j)
         {
             ii = array_size_i * j + i;
-            s_2df_2[array_size_j * i + j] = s_2df_1[ii] * H1_new[ii];
+            s_2df_2[array_size_i * j + i] = s_2df_1[ii] * H1_new[ii];
         }
     }
 
@@ -403,10 +412,10 @@ int main()
     int rank_3 = 1; /*  we are computing 1d transforms */
     int n_3[] = {array_size_j}; /* 1d transforms of length ... */
     int howmany_3 = array_size_i;
-    int idist_3 = array_size_j;
-    int odist_3 = array_size_j;
-    int istride_3 = 1;
-    int ostride_3 = 1; /* distance between two elements in
+    int idist_3 = 1;
+    int odist_3 = 1;
+    int istride_3 = array_size_i;
+    int ostride_3 = array_size_i; /* distance between two elements in
                                   the same column */
     int *inembed_3 = n_3, *onembed_3 = n_3;
     fftw_plan p_3 = fftw_plan_many_dft(rank_3, n_3,  howmany_3, s_2df_2, inembed_3, istride_3, idist_3,
@@ -416,7 +425,7 @@ int main()
     {
         for (j = 0; j < array_size_j; ++j)
         {
-            S_RD_2[array_size_i * j + i] = out[array_size_j * i + j] / array_size_j;
+            S_RD_2[array_size_i * j + i] = out[array_size_i * j + i] / array_size_j;
         }
     }
 
@@ -458,6 +467,26 @@ int main()
         }
     }
 
+    int rank_4 = 1; /*  we are computing 1d transforms */
+    int n_4[] = {array_size_i}; /* 1d transforms of length 1024 */
+    int howmany_4 = array_size_j;
+    int idist_4 = array_size_i;
+    int odist_4 = array_size_i;
+    int istride_4 = 1;
+    int ostride_4 = 1; /* distance between two elements in
+                                  the same column */
+    int *inembed_4 = n, *onembed_4 = n;
+    fftw_plan p_4 = fftw_plan_many_dft(rank_4, n_4,  howmany_4, S_RD_3, inembed_4, istride_4, idist_4,
+                                  out,  onembed_4, ostride_4,  odist_4, FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_execute(p_4);
+
+    for (i = 0; i < array_size_i; ++i)
+    {
+        for (j = 0; j < array_size_j; ++j)
+        {
+            s_image[array_size_i * j + i] = out[array_size_i * j + i] / array_size_i;
+        }
+    }
 
     FILE* fp_2;
     fopen_s(&fp_2, "D:\\Programming\\C++\\Qt\\CSA\\data.txt", "w");
@@ -467,7 +496,7 @@ int main()
         {
             ii = array_size_i * j + i;
             fprintf(fp_2, "i = %d  j = %d  ", i, j);
-            fprintf(fp_2, "% .20f + %.20fi\n", creal(S_RD_3[ii]), cimag(S_RD_3[ii]));
+            fprintf(fp_2, "% .20f + %.20fi\n", creal(s_image[ii]), cimag(s_image[ii]));
 
             //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, R0_RCMC[j]);
         }
@@ -475,7 +504,6 @@ int main()
     return 0;
 
 }
-
 
 
 
