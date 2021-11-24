@@ -184,10 +184,11 @@ int main()
 
 
     FILE* fp;
-    fopen_s(&fp, "D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for MinGW
-    //fopen("D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for Cygwin
+    //fopen_s(&fp, "D:\\Programming\\C++\\Qt\\CSA\\data4.bin", "rb"); // for MinGW
+    fp  = fopen("/home/pi/Desktop/Diplom/Chirp_scaling_algorithm/data4.bin", "rb"); // for Cygwin
     if (!fp)
     {
+		
         (void)printf("Unable to open file!");
         return 1;
     }
@@ -500,7 +501,7 @@ int main()
     }
 
     FILE* fp_2;
-    fopen_s(&fp_2, "D:\\Programming\\C++\\Qt\\CSA\\data.txt", "w");
+    fp_2 = fopen("/home/pi/Desktop/text.txt", "w");
     for (i = 0; i < array_size_i; ++i)
     {
         for (j = 0; j < array_size_j; ++j)
@@ -512,7 +513,7 @@ int main()
             //fprintf(fp_2, "i = %d j = %d %.16f \n", i, j, R0_RCMC[j]);
         }
     }
-
+/*
     int sockfd;
         char buffer[MAXLINE];
         char *hello = "Hello from server";
@@ -553,7 +554,7 @@ int main()
             0, (const struct sockaddr *) &cliaddr,
                 len);
         printf("Hello message sent.\n");
-
+*/
 
     return 0;
 }
