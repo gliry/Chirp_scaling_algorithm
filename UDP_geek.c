@@ -9,11 +9,13 @@
 #include <netinet/in.h>
 #include <complex.h>
 #include <fftw3.h>
+#include <time.h>
+#include <omp.h>
 
 
    
 #define PORT     4999
-#define MAXLINE 1024
+#define MAXLINE 2048
    
 double zeroethOrderBessel( double x )
 {
@@ -61,7 +63,7 @@ fftw_complex* calculate(fftw_complex* data_calculate)
     int BW_dop = 80; // Доплеровская полоса пропускания
     double Fr = 60e6; // Частота дискретизации по дальности
     double Fa = 200; // Частота дискретизации по азимуту
-    int Naz = 1024; // Количество линий дальности (количество строк в матрице), поставить 1024
+    int Naz = 2048; // Количество линий дальности (количество строк в матрице), поставить 1024
     int Nrg = 320; // Количество точек выборке по линии дальности (количество столбцов в матрице)
     double sita_r_c = (0 * 3.14) / 180; // Угол наклона луча, в радианах
     double c = 3e8; // Скорость света
@@ -87,12 +89,16 @@ fftw_complex* calculate(fftw_complex* data_calculate)
 
     int i = 0; // azimuth
     int j = 0; // range
-    int array_size_i = 1024;
+    int array_size_i = 2048;
     int array_size_j = 320;
     int ii = 0;
     int read = 0;
     double D_fn_ref_Vr = 0;
 
+    int check =  fftw_init_threads(void);
+
+    fftw_plan_with_nthreads(4);
+    printf("%d, checked\n", check);
     fftw_complex* data = NULL;
     data = (fftw_complex*)fftw_malloc(array_size_i * array_size_j * sizeof(fftw_complex));
 
@@ -490,6 +496,7 @@ fftw_complex* calculate(fftw_complex* data_calculate)
 
 
 int main() {
+    int array_size = 2048;
     int sockfd;
     char buffer[MAXLINE];
     char *hello = "Hello from server";
@@ -515,10 +522,10 @@ int main() {
         exit(EXIT_FAILURE);
     }
     double* received_data = NULL;
-    received_data = (double*)malloc(1024 * 320 * 2 * sizeof(double));
+    received_data = (double*)malloc(array_size * 320 * 2 * sizeof(double));
 
     double* send_data = NULL;
-    send_data = (double*)malloc(1024 * 320 * 2 * sizeof(double));
+    send_data = (double*)malloc(array_size * 320 * 2 * sizeof(double));
     
     double* received_data_double = NULL;
     received_data_double = (double*)malloc(32 * 2 * sizeof(double));
@@ -527,10 +534,10 @@ int main() {
     send_data_double = (double*)malloc(32 * 2 *sizeof(double));
 
     fftw_complex* data = NULL;
-    data = (fftw_complex*)fftw_malloc(1024 * 320 * sizeof(fftw_complex));   
+    data = (fftw_complex*)fftw_malloc(array_size * 320 * sizeof(fftw_complex));   
 
     fftw_complex* data_calculate = NULL;
-    data_calculate = (fftw_complex*)fftw_malloc(1024 * 320 * sizeof(fftw_complex)); 
+    data_calculate = (fftw_complex*)fftw_malloc(array_size * 320 * sizeof(fftw_complex)); 
 
     int len, n, ii;
     len = sizeof(cliaddr);  //len is value/resuslt
@@ -539,7 +546,7 @@ int main() {
     fp_2 = fopen("/home/pi/Desktop/text.txt", "w");
 	printf("opened\n");
     int k = 0;
-    for (int i = 0; i < 10240; ++i)
+    for (int i = 0; i < array_size * 10; ++i)
     {
         n = recvfrom(sockfd, received_data_double, 32 * 2 * sizeof(double), 
                 MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len);
@@ -548,37 +555,44 @@ int main() {
 	printf("i = %d Received: %d \n", i, n);
     }
     printf("Recieved\n");
+    
 
-    for (int i = 0; i < 1024; ++i)
+    for (int i = 0; i < array_size; ++i)
     {
         for (int j = 0; j < 320; ++j)
         {
-	    ii = 1024 * j + i;
+	    ii = array_size * j + i;
 	    data[ii] = received_data[ii * 2] + received_data[ii * 2 + 1] * I;
 	   // printf("i = %d, j = %d   ", i, j);
 	   // printf("%.20f + %.20fi\n", received_data[ii * 2], received_data[ii * 2 + 1]); 
         }
     }
-
+    clock_t begin = clock();
     data_calculate = calculate(data);
-for (int i = 0; i < 1024; ++i)
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    
+for (int i = 0; i < array_size; ++i)
 {
     for (int j = 0; j < 320; ++j)
     {
 	//fprintf(fp_2, "i = %d  j = %d ", i, j);
 	//fprintf(fp_2, "  %.20f\n", received_data);
-        ii = 1024 * j + i;
+        ii = array_size * j + i;
 	fprintf(fp_2, "i = %d j = %d  ", i, j);
 	fprintf(fp_2, "%.20f + %.20fi\n", creal(data_calculate[ii]), cimag(data_calculate[ii])); 
     }
 }
+
+
+
 FILE* fp_3;
 fp_3 = fopen("/home/pi/Desktop/text_2.txt", "w");
-for (int i = 0; i < 1024; ++i)
+for (int i = 0; i < array_size; ++i)
 {
     for (int j = 0; j < 320; ++j)
     {
-	ii = (1024 * j + i);
+	ii = (array_size * j + i);
 	send_data[ii*2] = creal(data_calculate[ii]);
 	send_data[ii*2 + 1] = cimag(data_calculate[ii]);
 	fprintf(fp_3, "i = %d  j = %d  ", i, j);
@@ -587,7 +601,7 @@ for (int i = 0; i < 1024; ++i)
 }
 int v = 0;
 int h = 0;
-for (int i = 0; i < 10240; ++i)
+for (int i = 0; i < array_size * 10; ++i)
 {
     // Здесь поделить на 10240 частей и sendto
     memcpy(send_data_double, send_data + (h * 64), 32 * 2 * sizeof(double));
@@ -597,6 +611,6 @@ for (int i = 0; i < 10240; ++i)
 
 }
     printf("Sended\n"); 
-      
+    printf("Time processing: %.5f\n", time_spent);
     return 0;
 }
